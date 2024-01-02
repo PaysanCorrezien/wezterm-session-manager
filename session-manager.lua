@@ -380,10 +380,50 @@ function session_manager.load_state(window)
   )
 end
 
--- Delete one or many states files
--- Find way to multi select ?
--- TODO: Implement
-function session_manager.delete_state(window) end
+--TODO: Find way to multi select ?
+--
+--- Delete a session file
+---@param window userdata Guiwindow
+function session_manager.delete_saved_session(window)
+  local active_pane = window:active_pane()
+  local saved_sessions = get_session_saved()
+  local choices = {}
+
+  for session_name, path in pairs(saved_sessions) do
+    wezterm.log_info("Deleting session '" .. session_name .. "' from path: " .. path)
+    table.insert(choices, { id = tostring(session_name), label = session_name })
+  end
+  window:perform_action(
+    wezterm.action.InputSelector {
+      choices = choices,
+      alphabet = "123456789",
+      description = "Press the key corresponding to the saved session you want to delete! Press '/' to start FuzzySearch",
+      action = wezterm.action_callback(function(window, pane, id, label)
+        if not id then
+          wezterm.log_error "id is nil"
+          return
+        end
+        local file_to_delete = saved_sessions[id]
+        wezterm.log_info("Deleting session '" .. id .. " with file  " .. file_to_delete)
+        local success, err = pcall(function()
+          os.remove(file_to_delete)
+        end)
+        if not success then
+          display_notification {
+            window = window,
+            message = "Failed to delete session '" .. id .. "' : " .. err,
+          }
+        else
+          display_notification {
+            window = window,
+            message = "Session '" .. id .. "' deleted successfully",
+          }
+        end
+      end),
+    },
+    active_pane
+  )
+end
 
 -- reload all states files saved, tmux ressurect like
 -- TODO: Implement
