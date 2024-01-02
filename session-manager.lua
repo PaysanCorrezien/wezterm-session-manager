@@ -4,8 +4,33 @@ local session_manager = {}
 --- Displays a notification in WezTerm.
 -- @param message string: The notification message to be displayed.
 local function display_notification(message)
+--- Displays a system notification and logs the message.
+-- https://wezfurlong.org/wezterm/config/lua/window/toast_notification.html?
+-- On windows it doesnt close the notification after time_ms
+---@param args table: A table containing the arguments for the notification.
+---  - window userdata (required): The window object where the notification will be displayed.
+---  - title string (optional): The notification title to be displayed. Defaults to "WezTerm Session Manager".
+---  - message string (optional): The notification message to be displayed. Defaults to "Wezterm Notification by Session Manager".
+---  - url string (optional): The URL to be opened when the notification is clicked. Defaults to nil (no URL).
+---  - time_ms number (optional): The duration of the notification in milliseconds. Defaults to 2000.
+local function display_notification(args)
+  -- Extract arguments from the table and assign default values
+  local window = args.window
+  local title = args.title or "WezTerm Session Manager"
+  local message = args.message or "Wezterm Notification by Session Manager"
+  local url = args.url
+  local time_ms = args.time_ms or 2000
+
+  -- Validate required arguments
+  if not window then
+    error "display_notification: 'window' argument is required"
+  end
+
+  -- Log the message
   wezterm.log_info(message)
-  -- Additional code to display a GUI notification can be added here if needed
+
+  -- Display the notification
+  window:toast_notification(title, message, url, time_ms)
 end
 
 --- Retrieves the current workspace data from the active window.
