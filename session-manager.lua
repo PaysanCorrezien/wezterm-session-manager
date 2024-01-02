@@ -105,8 +105,7 @@ local function recreate_workspace(window, workspace_data)
   local tabs = window:mux_window():tabs()
 
   if #tabs ~= 1 or #tabs[1]:panes() ~= 1 then
-    wezterm.log_info(
-      "Restoration can only be performed in a window with a single tab and a single pane, to prevent accidental data loss.")
+    wezterm.log_info "Restoration can only be performed in a window with a single tab and a single pane, to prevent accidental data loss."
     return
   end
 
@@ -114,16 +113,21 @@ local function recreate_workspace(window, workspace_data)
   local foreground_process = initial_pane:get_foreground_process_name()
 
   -- Check if the foreground process is a shell
-  if foreground_process:find("sh") or foreground_process:find("cmd.exe") or foreground_process:find("powershell.exe") or foreground_process:find("pwsh.exe") then
+  if
+    foreground_process:find "sh"
+    or foreground_process:find "cmd.exe"
+    or foreground_process:find "powershell.exe"
+    or foreground_process:find "pwsh.exe"
+  then
     -- Safe to close
-    initial_pane:send_text("exit\r")
+    initial_pane:send_text "exit\r"
   else
-    wezterm.log_info("Active program detected. Skipping exit command for initial pane.")
+    wezterm.log_info "Active program detected. Skipping exit command for initial pane."
   end
 
   -- Recreate tabs and panes from the saved state
   -- should work for windows and linux
-  local is_windows = wezterm.target_triple:find("windows") ~= nil
+  local is_windows = wezterm.target_triple:find "windows" ~= nil
 
   for i, tab_data in ipairs(workspace_data.tabs) do
     local cwd_uri = tab_data.panes[1].cwd
@@ -137,10 +141,11 @@ local function recreate_workspace(window, workspace_data)
       cwd_path = cwd_uri:gsub("file://", "")
     end
 
-    local new_tab = window:mux_window():spawn_tab({ cwd = cwd_path })
+    --TODO : allow config to define a table of argument by process, example for nvim pass a `restaure session` command
+    local new_tab = window:mux_window():spawn_tab { cwd = cwd_path }
 
     if not new_tab then
-      wezterm.log_info("Failed to create a new tab.")
+      wezterm.log_info "Failed to create a new tab."
       break
     end
 
@@ -153,16 +158,19 @@ local function recreate_workspace(window, workspace_data)
       if j == 1 then
         new_pane = new_tab:active_pane()
       else
-        local direction = 'Right'
+        local direction = "Right"
         if pane_data.left == tab_data.panes[j - 1].left then
-          direction = 'Bottom'
+          direction = "Bottom"
         end
 
-        new_pane = new_tab:active_pane():split({ direction = direction, cwd = pane_data.cwd:gsub("file:///", "") })
+        new_pane = new_tab:active_pane():split {
+          direction = direction,
+          cwd = pane_data.cwd:gsub("file:///", ""),
+        }
       end
 
       if not new_pane then
-        wezterm.log_info("Failed to create a new pane.")
+        wezterm.log_info "Failed to create a new pane."
         break
       end
 
@@ -175,7 +183,7 @@ local function recreate_workspace(window, workspace_data)
     end
   end
 
-  wezterm.log_info("Workspace recreated with new tabs and panes based on saved state.")
+  wezterm.log_info "Workspace recreated with new tabs and panes based on saved state."
   return true
 end
 
