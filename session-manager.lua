@@ -319,13 +319,46 @@ local function restore_session_state(window, pane, session_name, selected_path)
   }
 end
 
---- Allows to select which workspace to load
+--- Open a file dialog to select a session file to load
+--- verify if the session is already active, then reload it
+---@param window userdata Guiwindow
 function session_manager.load_state(window)
-  -- TODO: Implement
-  -- Placeholder for user selection logic
-  -- ...
-  -- TODO: Call the function recreate_workspace(workspace_data) to recreate the workspace
-  -- Placeholder for recreation logic...
+  local active_pane = window:active_pane()
+  local active_sessions = get_active_sessions()
+  local saved_sessions = get_session_saved()
+  local choices = {} --- For input selector
+  local path_map = {} -- for path lookup
+  for session_name, path in pairs(saved_sessions) do
+    table.insert(choices, { id = tostring(session_name), label = session_name })
+    path_map[session_name] = path
+  end
+
+  window:perform_action(
+    wezterm.action.InputSelector {
+      choices = choices,
+      alphabet = "123456789",
+      description = "Press the key corresponding to the session you want to reload to! Press '/' to start FuzzySearch",
+      action = wezterm.action_callback(function(window, pane, id, label)
+        if not id then
+          wezterm.log_error "id is nil"
+          return
+        end
+
+        local selected_session_name = id
+        local selected_path = path_map[selected_session_name]
+
+        if not is_session_active(selected_session_name, active_sessions) then
+          restore_session_state(window, pane, selected_session_name, selected_path)
+        else
+          display_notification {
+            window = window,
+            message = "Workspace already Exist, Skipping ",
+          }
+        end
+      end),
+    },
+    active_pane
+  )
 end
 
 --- Orchestrator function to save the current workspace state.
