@@ -7,6 +7,8 @@ function session_manager.config()
   return "not implemented"
 end
 
+--- Displays a notification in WezTerm.
+-- @param message string: The notification message to be displayed.
 --- Displays a system notification and logs the message.
 -- https://wezfurlong.org/wezterm/config/lua/window/toast_notification.html?
 -- On windows it doesnt close the notification after time_ms
