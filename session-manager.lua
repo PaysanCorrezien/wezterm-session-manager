@@ -1,9 +1,12 @@
-local wezterm = require("wezterm")
+local wezterm = require "wezterm"
 local session_manager = {}
 
---- Displays a notification in WezTerm.
--- @param message string: The notification message to be displayed.
-local function display_notification(message)
+-- TODO: add global config options Neovim stylem with defaults that user override
+-- use config.param in others functions
+function session_manager.config()
+  return "not implemented"
+end
+
 --- Displays a system notification and logs the message.
 -- https://wezfurlong.org/wezterm/config/lua/window/toast_notification.html?
 -- On windows it doesnt close the notification after time_ms
@@ -39,14 +42,14 @@ local function retrieve_workspace_data(window)
   local workspace_name = window:active_workspace()
   local workspace_data = {
     name = workspace_name,
-    tabs = {}
+    tabs = {},
   }
 
   -- Iterate over tabs in the current window
   for _, tab in ipairs(window:mux_window():tabs()) do
     local tab_data = {
       tab_id = tostring(tab:tab_id()),
-      panes = {}
+      panes = {},
     }
 
     -- Iterate over panes in the current tab
@@ -64,7 +67,7 @@ local function retrieve_workspace_data(window)
         pixel_width = pane_info.pixel_width,
         pixel_height = pane_info.pixel_height,
         cwd = tostring(pane_info.pane:get_current_working_dir()),
-        tty = tostring(pane_info.pane:get_foreground_process_name())
+        tty = tostring(pane_info.pane:get_foreground_process_name()),
       })
     end
 
@@ -80,7 +83,7 @@ end
 -- @return boolean: true if saving was successful, false otherwise.
 local function save_to_json_file(data, file_path)
   if not data then
-    wezterm.log_info("No workspace data to log.")
+    wezterm.log_info "No workspace data to log."
     return false
   end
 
@@ -98,7 +101,7 @@ end
 -- @param workspace_data table: The data structure containing the saved workspace state.
 local function recreate_workspace(window, workspace_data)
   if not workspace_data or not workspace_data.tabs then
-    wezterm.log_info("Invalid or empty workspace data provided.")
+    wezterm.log_info "Invalid or empty workspace data provided."
     return
   end
 
@@ -187,7 +190,6 @@ local function recreate_workspace(window, workspace_data)
   return true
 end
 
-
 --- Loads data from a JSON file.
 -- @param file_path string: The file path from which the JSON data will be loaded.
 -- @return table or nil: The loaded data as a Lua table, or nil if loading failed.
@@ -198,7 +200,7 @@ local function load_from_json_file(file_path)
     return nil
   end
 
-  local file_content = file:read("*a")
+  local file_content = file:read "*a"
   file:close()
 
   local data = wezterm.json_parse(file_content)
@@ -211,22 +213,39 @@ end
 --- Loads the saved json file matching the current workspace.
 function session_manager.restore_state(window)
   local workspace_name = window:active_workspace()
-  local file_path = wezterm.home_dir ..
-      "/.config/wezterm/wezterm-session-manager/wezterm_state_" .. workspace_name .. ".json"
+  local file_path = wezterm.home_dir
+    .. "/.config/wezterm/wezterm-session-manager/wezterm_state_"
+    .. workspace_name
+    .. ".json"
 
   local workspace_data = load_from_json_file(file_path)
   if not workspace_data then
-    window:toast_notification('WezTerm',
-      'Workspace state file not found for workspace: ' .. workspace_name, nil, 4000)
+    window:toast_notification(
+      "WezTerm",
+      "Workspace state file not found for workspace: " .. workspace_name,
+      nil,
+      4000
+    )
     return
   end
 
   if recreate_workspace(window, workspace_data) then
-    window:toast_notification('WezTerm', 'Workspace state loaded for workspace: ' .. workspace_name,
-      nil, 4000)
+    window:toast_notification(
+      "WezTerm",
+      "Workspace state loaded for workspace: " .. workspace_name,
+      nil,
+      4000
+    )
   else
-    window:toast_notification('WezTerm', 'Workspace state loading failed for workspace: ' .. workspace_name,
-      nil, 4000)
+    window:toast_notification(
+      "WezTerm",
+      "Workspace state loading failed for workspace: " .. workspace_name,
+      nil,
+      4000
+    )
+  end
+end
+
 -- Helper function to get a list of active workspace names
 -- @return table A list of active workspace names
 local function get_active_sessions()
@@ -361,19 +380,42 @@ function session_manager.load_state(window)
   )
 end
 
+-- Delete one or many states files
+-- Find way to multi select ?
+-- TODO: Implement
+function session_manager.delete_state(window) end
+
+-- reload all states files saved, tmux ressurect like
+-- TODO: Implement
+-- Should check if its the first process of wezterm , to not reload if others system window are open ?
+--
+function session_manager.reload_all_states(window) end
 --- Orchestrator function to save the current workspace state.
 -- Collects workspace data, saves it to a JSON file, and displays a notification.
 function session_manager.save_state(window)
   local data = retrieve_workspace_data(window)
 
   -- Construct the file path based on the workspace name
-  local file_path = wezterm.home_dir .. "/.config/wezterm/wezterm-session-manager/wezterm_state_" .. data.name .. ".json"
+  local file_path = wezterm.home_dir
+    .. "/.config/wezterm/wezterm-session-manager/wezterm_state_"
+    .. data.name
+    .. ".json"
 
   -- Save the workspace data to a JSON file and display the appropriate notification
   if save_to_json_file(data, file_path) then
-    window:toast_notification('WezTerm Session Manager', 'Workspace state saved successfully', nil, 4000)
+    window:toast_notification(
+      "WezTerm Session Manager",
+      "Workspace state saved successfully",
+      nil,
+      4000
+    )
   else
-    window:toast_notification('WezTerm Session Manager', 'Failed to save workspace state', nil, 4000)
+    window:toast_notification(
+      "WezTerm Session Manager",
+      "Failed to save workspace state",
+      nil,
+      4000
+    )
   end
 end
 
