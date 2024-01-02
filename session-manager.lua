@@ -429,7 +429,27 @@ end
 -- TODO: Implement
 -- Should check if its the first process of wezterm , to not reload if others system window are open ?
 --
-function session_manager.reload_all_states(window) end
+function session_manager.resurrect_all_sessions(window)
+  local active_pane = window:active_pane()
+  local all_saved_sessions = get_session_saved()
+  local active_sessions = get_active_sessions()
+
+  if wezterm_is_first_instance() then
+    wezterm.log_info "First instance of wezterm, skipping reload all states"
+  end
+
+  for session_name, path in pairs(all_saved_sessions) do
+    if not is_session_active(session_name, active_sessions) then
+      wezterm.log_info("Restoring session '" .. session_name .. "' from path: " .. path)
+      restore_session_state(window, active_pane, session_name, path)
+    end
+    wezterm.log_info("Session '" .. session_name .. "' already active, skipping")
+  end
+  display_notification {
+    window = window,
+    message = "All saved sessions loaded successfully!",
+  }
+end
 --- Orchestrator function to save the current workspace state.
 -- Collects workspace data, saves it to a JSON file, and displays a notification.
 function session_manager.save_state(window)
