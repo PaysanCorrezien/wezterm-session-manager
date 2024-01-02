@@ -227,7 +227,96 @@ function session_manager.restore_state(window)
   else
     window:toast_notification('WezTerm', 'Workspace state loading failed for workspace: ' .. workspace_name,
       nil, 4000)
+-- Helper function to get a list of active workspace names
+-- @return table A list of active workspace names
+local function get_active_sessions()
+  local all_windows = wezterm.mux.all_windows()
+  local active_workspaces = {}
+
+  for _, win in ipairs(all_windows) do
+    local workspace_name = win:get_workspace()
+    table.insert(active_workspaces, workspace_name)
   end
+
+  return active_workspaces
+end
+-- go throught the list of all sessions and try to find the provide session name
+local function is_session_active(session_name, active_sessions)
+  for _, active_session_name in ipairs(active_sessions) do
+    if session_name == active_session_name then
+      return true
+    end
+  end
+  return false
+end
+
+-- return a table of all saved sessions and the absolute path to the file containing the session information
+local function get_session_saved(folder_path, pattern)
+  local sessions = {}
+  pattern = pattern or "wezterm_state_"
+  folder_path = folder_path
+    or wezterm.home_dir .. "/.config/wezterm/wezterm-session-manager/"
+
+  for _, file in ipairs(wezterm.read_dir(folder_path)) do
+    if file:find(pattern) then
+      local session_name = file:match(pattern .. "(.+)%.json$")
+      if session_name then
+        sessions[session_name] = file
+      end
+    end
+  end
+  return sessions
+end
+
+---@param window userdata: The GuiWindow object.
+---@param pane userdata: The MuxPane object.
+---@param session_name string: The name of the session to restore.
+---@param selected_path string: The absolute path to the file containing the session information.
+local function restore_session_state(window, pane, session_name, selected_path)
+  wezterm.log_info(
+    "Restoring session '" .. session_name .. "' from path: " .. selected_path
+  )
+
+  -- Create a new workspace which returns a MuxTab object ...
+  -- --NOTE: this create a mux_window but dont create the associated GUI window ,
+  -- cant go this route i guess because GUIwindow cant be crate by mux on background ?
+  -- we could go from Muxtab to MuxWindow to GUIwindow but it fail :
+  -- event: mux window id 8 is not currently associated with a gui window
+  -- local _, _, mux_window =
+  --   wezterm.mux.spawn_window { workspace = selected_session_name }
+  -- Switch to the workspace first; this should trigger UI window creation too
+  window:perform_action(wezterm.action.SwitchToWorkspace { name = session_name }, pane)
+
+  -- Retrieve all GUI windows
+  local all_gui_windows = wezterm.gui.gui_windows()
+
+  -- Find the GUI window that matches the target workspace
+  local gui_window = nil
+  for _, gw in ipairs(all_gui_windows) do
+    if gw:active_workspace() == session_name then
+      gui_window = gw
+      break
+    end
+  end
+
+  if not gui_window then
+    wezterm.log_error("Failed to find a GUI window for the workspace: " .. session_name)
+    return
+  end
+
+  -- Load session data from the JSON file
+  local session_data = load_from_json_file(selected_path)
+  if not session_data then
+    wezterm.log_error("Failed to load session data from: " .. selected_path)
+    return
+  end
+
+  -- Restore the session state using the found GuiWindow object
+  recreate_workspace(gui_window, session_data) --NOTE: maybe add return type to recreate_workspace to check if it fail or not ?
+  display_notification {
+    window = gui_window,
+    message = "Workspace loaded successfully!",
+  }
 end
 
 --- Allows to select which workspace to load
