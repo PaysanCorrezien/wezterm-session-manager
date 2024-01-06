@@ -71,6 +71,13 @@ implemented:
 - Complex pane layouts won't be correctly restored, the current implementation
   to determine the pane position is extremely basic
 
+## TODO
+
+- [ ] Find a way to prevent opening a new tab when restauring multiples sessions
+- [ ] It seems when there is too much session some dont get restaured, troubleshoot this
+- [ ] Restaure programs (nvim)
+- [ ] Update Docs
+
 ## Contributing
 
 Feedback, bug reports, and contributions to enhance the script are welcome.

@@ -425,18 +425,21 @@ function session_manager.delete_saved_session(window)
   )
 end
 
+--TODO :
+-- local wezterm_is_first_instance = function()
+--   return true
+-- end
+
 -- reload all states files saved, tmux ressurect like
--- TODO: Implement
--- Should check if its the first process of wezterm , to not reload if others system window are open ?
---
+---@param window userdata Guiwindow
 function session_manager.resurrect_all_sessions(window)
   local active_pane = window:active_pane()
   local all_saved_sessions = get_session_saved()
   local active_sessions = get_active_sessions()
 
-  if wezterm_is_first_instance() then
-    wezterm.log_info "First instance of wezterm, skipping reload all states"
-  end
+  -- if wezterm_is_first_instance() then
+  --   wezterm.log_info "First instance of wezterm, skipping reload all states"
+  -- end
 
   for session_name, path in pairs(all_saved_sessions) do
     if not is_session_active(session_name, active_sessions) then
@@ -450,6 +453,7 @@ function session_manager.resurrect_all_sessions(window)
     message = "All saved sessions loaded successfully!",
   }
 end
+
 --- Orchestrator function to save the current workspace state.
 -- Collects workspace data, saves it to a JSON file, and displays a notification.
 function session_manager.save_state(window)
@@ -465,7 +469,7 @@ function session_manager.save_state(window)
   if save_to_json_file(data, file_path) then
     window:toast_notification(
       "WezTerm Session Manager",
-      "Workspace state saved successfully",
+      "Workspace : " .. data.name .. " state saved successfully",
       nil,
       4000
     )
