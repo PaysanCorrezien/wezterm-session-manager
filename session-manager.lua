@@ -30,7 +30,6 @@ local function display_notification(args)
   if not window then
     error "display_notification: 'window' argument is required"
   end
-
   -- Log the message
   wezterm.log_info(message)
 
@@ -146,7 +145,6 @@ local function recreate_workspace(window, workspace_data)
       cwd_path = cwd_uri:gsub("file://", "")
     end
 
-    --TODO : allow config to define a table of argument by process, example for nvim pass a `restaure session` command
     local new_tab = window:mux_window():spawn_tab { cwd = cwd_path }
 
     if not new_tab then
